@@ -100,16 +100,32 @@ export default function TeacherManager() {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this teacher?')) return
 
-    const { error } = await supabase
-      .from('teachers')
-      .delete()
-      .eq('id', id)
+    try {
+      // Check if teacher has attendance sessions
+      const { data: sessions, error: sessionError } = await supabase
+        .from('attendance_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('teacher_id', id)
 
-    if (error) {
-      alert('Error deleting teacher: ' + error.message)
-    } else {
-      alert('Teacher deleted successfully!')
+      if (sessionError) throw sessionError
+
+      if (sessions && sessions.length > 0) {
+        alert('❌ Cannot delete teacher: Teacher has created attendance sessions.\n\nPlease delete their attendance sessions first or keep this teacher.')
+        return
+      }
+
+      // Safe to delete
+      const { error } = await supabase
+        .from('teachers')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      
+      alert('✅ Teacher deleted successfully!')
       fetchTeachers()
+    } catch (err: any) {
+      alert('Error deleting teacher: ' + err.message)
     }
   }
 

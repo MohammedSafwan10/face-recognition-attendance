@@ -108,6 +108,20 @@ export default function StudentRegistration() {
     if (!confirm('Are you sure you want to delete this student?')) return
 
     try {
+      // Check if student has attendance records
+      const { data: attendanceRecords, error: attendanceError } = await supabase
+        .from('attendance_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('student_id', id)
+
+      if (attendanceError) throw attendanceError
+
+      if (attendanceRecords && attendanceRecords.length > 0) {
+        setError('Cannot delete student: Student has attendance records. Please delete attendance records first or keep this student.')
+        return
+      }
+
+      // Safe to delete
       const { error } = await supabase
         .from('students')
         .delete()
