@@ -151,6 +151,7 @@ serve(async (req) => {
     const data = await res.json()
 
     if (res.ok) {
+      console.log('✅ OTP email sent successfully:', data)
       return new Response(
         JSON.stringify({ success: true, message: 'OTP sent successfully' }),
         { 
@@ -159,12 +160,16 @@ serve(async (req) => {
         }
       )
     } else {
-      throw new Error(data.message || 'Failed to send email')
+      console.error('❌ Resend API Error:', data)
+      throw new Error(JSON.stringify(data))
     }
   } catch (error: any) {
-    console.error('Error:', error)
+    console.error('❌ Function Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Check if RESEND_API_KEY is set and from address is valid'
+      }),
       { 
         status: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
