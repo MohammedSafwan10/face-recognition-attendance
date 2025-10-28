@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { ThemeProvider } from './contexts/ThemeContext'
 import LoginPage from './pages/LoginPage'
 import AdminPortal from './pages/AdminPortal'
@@ -27,6 +28,7 @@ function App() {
           </Routes>
         </div>
       </Router>
+      <Analytics />
     </ThemeProvider>
   )
 }
