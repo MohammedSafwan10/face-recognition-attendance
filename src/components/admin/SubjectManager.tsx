@@ -78,8 +78,8 @@ export default function SubjectManager() {
     const payload = {
       name: formData.name,
       code: formData.code,
-      course_id: formData.course_id ? parseInt(formData.course_id) : null,
-      semester_id: formData.semester_id ? parseInt(formData.semester_id) : null
+      course_id: formData.course_id || null,
+      semester_id: formData.semester_id || null
     }
 
     if (editingSubject) {

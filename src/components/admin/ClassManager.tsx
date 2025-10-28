@@ -76,8 +76,8 @@ export default function ClassManager() {
 
     const payload = {
       name: formData.name,
-      course_id: formData.course_id ? parseInt(formData.course_id) : null,
-      semester_id: formData.semester_id ? parseInt(formData.semester_id) : null,
+      course_id: formData.course_id || null,
+      semester_id: formData.semester_id || null,
       section: formData.section || null
     }
 
@@ -124,6 +124,40 @@ export default function ClassManager() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this class?')) return
+
+    // Check if class has students
+    const { data: students, error: checkError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('class_id', id)
+      .limit(1)
+
+    if (checkError) {
+      alert('Error checking class usage: ' + checkError.message)
+      return
+    }
+
+    if (students && students.length > 0) {
+      alert('Cannot delete this class because there are students enrolled in it. Please move or delete the students first.')
+      return
+    }
+
+    // Check if class has attendance sessions
+    const { data: sessions, error: sessionError } = await supabase
+      .from('attendance_sessions')
+      .select('id')
+      .eq('class_id', id)
+      .limit(1)
+
+    if (sessionError) {
+      alert('Error checking class usage: ' + sessionError.message)
+      return
+    }
+
+    if (sessions && sessions.length > 0) {
+      alert('Cannot delete this class because it has attendance sessions. Please delete the sessions first.')
+      return
+    }
 
     const { error } = await supabase
       .from('classes')

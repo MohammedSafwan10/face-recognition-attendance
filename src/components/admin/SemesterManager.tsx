@@ -102,6 +102,40 @@ export default function SemesterManager() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this semester?')) return
 
+    // Check if semester has classes
+    const { data: classes, error: classError } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('semester_id', id)
+      .limit(1)
+
+    if (classError) {
+      alert('Error checking semester usage: ' + classError.message)
+      return
+    }
+
+    if (classes && classes.length > 0) {
+      alert('Cannot delete this semester because it has classes. Please delete the classes first.')
+      return
+    }
+
+    // Check if semester has subjects
+    const { data: subjects, error: subjectError } = await supabase
+      .from('subjects')
+      .select('id')
+      .eq('semester_id', id)
+      .limit(1)
+
+    if (subjectError) {
+      alert('Error checking semester usage: ' + subjectError.message)
+      return
+    }
+
+    if (subjects && subjects.length > 0) {
+      alert('Cannot delete this semester because it has subjects. Please delete the subjects first.')
+      return
+    }
+
     const { error } = await supabase
       .from('semesters')
       .delete()

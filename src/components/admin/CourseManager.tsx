@@ -76,6 +76,48 @@ export default function CourseManager() {
     if (!confirm('Are you sure you want to delete this course?')) return
 
     try {
+      // Check if course has classes
+      const { data: classes, error: classError } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('course_id', id)
+        .limit(1)
+
+      if (classError) throw classError
+
+      if (classes && classes.length > 0) {
+        setError('Cannot delete this course because it has classes. Please delete the classes first.')
+        return
+      }
+
+      // Check if course has semesters
+      const { data: semesters, error: semesterError } = await supabase
+        .from('semesters')
+        .select('id')
+        .eq('course_id', id)
+        .limit(1)
+
+      if (semesterError) throw semesterError
+
+      if (semesters && semesters.length > 0) {
+        setError('Cannot delete this course because it has semesters. Please delete the semesters first.')
+        return
+      }
+
+      // Check if course has subjects
+      const { data: subjects, error: subjectError } = await supabase
+        .from('subjects')
+        .select('id')
+        .eq('course_id', id)
+        .limit(1)
+
+      if (subjectError) throw subjectError
+
+      if (subjects && subjects.length > 0) {
+        setError('Cannot delete this course because it has subjects. Please delete the subjects first.')
+        return
+      }
+
       const { error } = await supabase
         .from('courses')
         .delete()
