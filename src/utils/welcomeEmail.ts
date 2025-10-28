@@ -1,4 +1,5 @@
-import { supabase } from '../lib/supabase'
+// Welcome email feature disabled - OTP is displayed on login screen
+// Keeping file for future use if email service is needed
 
 export interface WelcomeEmailData {
   email: string
@@ -14,16 +15,24 @@ export interface WelcomeEmailData {
  */
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data: result, error } = await supabase.functions.invoke('send-welcome-email', {
-      body: data
+    // Use fetch directly to get raw response body
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-welcome-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify(data)
     })
 
-    if (error) {
-      console.error('❌ Edge Function error:', error)
-      // Extract actual error message from Edge Function response
-      const errorMsg = typeof error === 'object' && error.message 
-        ? error.message 
-        : JSON.stringify(error)
+    const result = await response.json()
+
+    if (!response.ok) {
+      console.error('❌ Edge Function error response:', response.status, result)
+      const detailedError = result?.error || result?.message || JSON.stringify(result)
       
       // Fallback: Log details in console for manual sending
       console.log(`📧 Welcome Email Details:
@@ -33,17 +42,17 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
         ${data.rollNumber ? `Roll Number: ${data.rollNumber}` : ''}
         ${data.department ? `Department: ${data.department}` : ''}
         
-        Error: ${errorMsg}
+        Error: ${detailedError}
       `)
-      return { success: false, error: `Edge Function error: ${errorMsg}` }
+      return { success: false, error: `Edge Function error: ${detailedError}` }
     }
 
     if (result?.success) {
       console.log('✅ Welcome email sent successfully to:', data.email)
       return { success: true }
     } else {
-      const resultError = result?.error || 'Email sending failed'
-      console.error('Email API error:', resultError)
+      const resultError = result?.error || result?.message || 'Email sending failed'
+      console.error('❌ Email API error:', resultError)
       return { success: false, error: resultError }
     }
   } catch (error: any) {

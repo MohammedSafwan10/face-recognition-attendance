@@ -24,7 +24,16 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
       { facingMode: "environment" }, // Use back camera on mobile
       {
         fps: 10,
-        qrbox: { width: 250, height: 250 }
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          // Make QR box responsive - 70% of smaller dimension
+          const minDimension = Math.min(viewfinderWidth, viewfinderHeight)
+          const boxSize = Math.floor(minDimension * 0.7)
+          return {
+            width: boxSize,
+            height: boxSize
+          }
+        },
+        aspectRatio: 1.0
       },
       (decodedText) => {
         setIsScanning(true)
@@ -86,7 +95,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         </p>
       </div>
 
-      <div id="qr-reader" className="rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600"></div>
+      <div id="qr-reader" className="rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600 w-full max-w-md mx-auto" style={{ minHeight: '400px' }}></div>
       
       {cameraStarted && !isScanning && (
         <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import FaceCapture from '../shared/FaceCapture'
 import { descriptorToArray } from '../../lib/faceapi'
-import { sendWelcomeEmailWithFeedback } from '../../utils/welcomeEmail'
+// Welcome email removed - OTP displayed on login screen
 
 interface Class {
   id: string
@@ -91,20 +91,7 @@ export default function StudentRegistration() {
 
       if (error) throw error
 
-      // Auto-send welcome email
-      const emailResult = await sendWelcomeEmailWithFeedback({
-        email: formData.email,
-        name: formData.name,
-        userType: 'student',
-        rollNumber: formData.usn,
-      })
-
-      if (emailResult.success) {
-        setSuccess('Student registered successfully! Welcome email sent to ' + formData.email)
-      } else {
-        setSuccess('Student registered successfully! (Email: ' + emailResult.message + ')')
-      }
-
+      setSuccess(`✅ Student registered successfully!\n\nLogin Details:\nEmail: ${formData.email}\nOTP will be generated on login screen.`)
       setShowForm(false)
       resetForm()
       fetchData()
@@ -113,25 +100,8 @@ export default function StudentRegistration() {
     }
   }
 
-  const handleResendEmail = async (student: Student) => {
-    try {
-      setSuccess('Sending welcome email...')
-      
-      const emailResult = await sendWelcomeEmailWithFeedback({
-        email: student.email,
-        name: student.name,
-        userType: 'student',
-        rollNumber: student.usn,
-      })
-
-      if (emailResult.success) {
-        setSuccess('Welcome email sent to ' + student.email)
-      } else {
-        setSuccess(emailResult.message)
-      }
-    } catch (err: any) {
-      setError('Failed to send email: ' + err.message)
-    }
+  const handleShowLoginInfo = (student: Student) => {
+    alert(`Login Information for ${student.name}:\n\nEmail: ${student.email}\nRoll Number: ${student.usn}\n\nInstructions:\n1. Go to login page\n2. Select "Student" tab\n3. Enter email: ${student.email}\n4. Click "Generate OTP"\n5. OTP will be displayed on screen\n6. Enter OTP and login`)
   }
 
   const handleDelete = async (id: string) => {
@@ -339,11 +309,11 @@ export default function StudentRegistration() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2 justify-end">
                       <button
-                        onClick={() => handleResendEmail(student)}
+                        onClick={() => handleShowLoginInfo(student)}
                         className="text-indigo-500 hover:text-indigo-600 font-medium"
-                        title="Resend welcome email"
+                        title="Show login instructions"
                       >
-                        📧 Email
+                        🔑 Login Info
                       </button>
                       <button
                         onClick={() => handleDelete(student.id)}

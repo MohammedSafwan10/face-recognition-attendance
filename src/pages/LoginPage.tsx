@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { generateOTP, sendOTP, storeOTP, verifyOTP } from '../utils/otp'
+import { generateOTP, storeOTP, verifyOTP } from '../utils/otp'
 import ThemeToggle from '../components/shared/ThemeToggle'
 
 type LoginType = 'admin' | 'teacher' | 'student'
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
+  const [generatedOTP, setGeneratedOTP] = useState('') // Store generated OTP to display
   const [otpSent, setOtpSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -36,31 +37,29 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Get user name from database
+      // Check if user exists in database
       const table = loginType === 'teacher' ? 'teachers' : 'students'
-      const { data: user } = await supabase
+      const { data: user, error: userError } = await supabase
         .from(table)
         .select('name')
         .eq('email', email)
         .single()
 
-      const userName = user?.name || 'User'
+      if (userError || !user) {
+        setError(`Email not registered. Please contact admin to register as ${loginType}.`)
+        setLoading(false)
+        return
+      }
 
-      // Generate and send OTP
+      // Generate OTP and store in database
       const otpCode = generateOTP()
       await storeOTP(email, otpCode)
-      const emailSent = await sendOTP(email, otpCode, userName)
       
+      // Display OTP on screen (no email sending)
+      setGeneratedOTP(otpCode)
       setOtpSent(true)
-      
-      if (emailSent) {
-        alert(`OTP sent to ${email}. Check your email inbox.`)
-      } else {
-        alert(`Email service unavailable. For demo, use OTP: ${otpCode}`)
-        console.log(`📧 OTP for ${email}: ${otpCode}`)
-      }
     } catch (err) {
-      setError('Failed to send OTP. Please check your email.')
+      setError('Failed to generate OTP. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -114,6 +113,7 @@ export default function LoginPage() {
     setEmail('')
     setPassword('')
     setOtp('')
+    setGeneratedOTP('')
     setOtpSent(false)
     setError('')
   }
@@ -229,10 +229,36 @@ export default function LoginPage() {
                   disabled={!email || loading}
                   className="btn-primary w-full"
                 >
-                  {loading ? 'Sending OTP...' : 'Send OTP'}
+                  {loading ? 'Generating OTP...' : 'Generate OTP'}
                 </button>
               ) : (
                 <>
+                  {/* Display Generated OTP */}
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-2 border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Your OTP Code:
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedOTP)
+                          alert('OTP copied to clipboard!')
+                        }}
+                        className="text-xs px-3 py-1 bg-white dark:bg-gray-800 border border-purple-300 dark:border-purple-600 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
+                      >
+                        📋 Copy
+                      </button>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-3xl font-bold tracking-widest text-purple-600 dark:text-purple-400 font-mono">
+                        {generatedOTP}
+                      </span>
+                    </div>
+                    <p className="text-xs text-center text-gray-600 dark:text-gray-400">
+                      ⏱️ Valid for 10 minutes
+                    </p>
+                  </div>
+
                   <div>
                     <label className="label">Enter OTP</label>
                     <input
@@ -255,7 +281,7 @@ export default function LoginPage() {
                     onClick={resetForm}
                     className="btn-secondary w-full"
                   >
-                    Resend OTP
+                    Generate New OTP
                   </button>
                 </>
               )}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { sendWelcomeEmailWithFeedback } from '../../utils/welcomeEmail'
+// Welcome email removed - OTP displayed on login screen
 
 interface Teacher {
   id: number
@@ -73,20 +73,7 @@ export default function TeacherManager() {
       if (error) {
         alert('Error creating teacher: ' + error.message)
       } else {
-        // Auto-send welcome email
-        const emailResult = await sendWelcomeEmailWithFeedback({
-          email: formData.email,
-          name: formData.name,
-          userType: 'teacher',
-          department: formData.department,
-        })
-
-        if (emailResult.success) {
-          alert('Teacher created successfully! Welcome email sent to ' + formData.email)
-        } else {
-          alert('Teacher created successfully! (Email: ' + emailResult.message + ')')
-        }
-        
+        alert(`✅ Teacher created successfully!\n\nLogin Details:\nEmail: ${formData.email}\nOTP will be generated on login screen.`)
         resetForm()
         fetchTeachers()
       }
@@ -106,23 +93,8 @@ export default function TeacherManager() {
     setShowAddForm(true)
   }
 
-  const handleResendEmail = async (teacher: Teacher) => {
-    try {
-      const emailResult = await sendWelcomeEmailWithFeedback({
-        email: teacher.email,
-        name: teacher.name,
-        userType: 'teacher',
-        department: teacher.department,
-      })
-
-      if (emailResult.success) {
-        alert('Welcome email sent to ' + teacher.email)
-      } else {
-        alert(emailResult.message)
-      }
-    } catch (err: any) {
-      alert('Failed to send email: ' + err.message)
-    }
+  const handleShowLoginInfo = (teacher: Teacher) => {
+    alert(`Login Information for ${teacher.name}:\n\nEmail: ${teacher.email}\n\nInstructions:\n1. Go to login page\n2. Select "Teacher" tab\n3. Enter email: ${teacher.email}\n4. Click "Generate OTP"\n5. OTP will be displayed on screen\n6. Enter OTP and login`)
   }
 
   const handleDelete = async (id: number) => {
@@ -281,11 +253,11 @@ export default function TeacherManager() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
                       <button
-                        onClick={() => handleResendEmail(teacher)}
+                        onClick={() => handleShowLoginInfo(teacher)}
                         className="text-emerald-500 hover:text-emerald-600 font-medium"
-                        title="Resend welcome email"
+                        title="Show login instructions"
                       >
-                        📧 Email
+                        🔑 Login Info
                       </button>
                       <button
                         onClick={() => handleEdit(teacher)}
