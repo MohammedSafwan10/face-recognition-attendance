@@ -21,10 +21,14 @@ export default function AttendanceReports({ userType, userEmail }: Props) {
   const [loading, setLoading] = useState(true)
   const [dateFilter, setDateFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [studentFilter, setStudentFilter] = useState('')
+  const [classFilter, setClassFilter] = useState('')
+  const [subjectFilter, setSubjectFilter] = useState('')
+  const [courseFilter, setCourseFilter] = useState('')
 
   useEffect(() => {
     fetchReports()
-  }, [dateFilter, statusFilter])
+  }, [dateFilter, statusFilter, studentFilter, classFilter, subjectFilter, courseFilter])
 
   const fetchReports = async () => {
     setLoading(true)
@@ -71,7 +75,7 @@ export default function AttendanceReports({ userType, userEmail }: Props) {
 
       if (error) throw error
 
-      const formatted = data?.map((r: any) => ({
+      let formatted = data?.map((r: any) => ({
         student_name: r.students?.name || 'Unknown',
         student_usn: r.students?.usn || '-',
         subject_name: r.attendance_sessions?.subjects?.name || 'Unknown Subject',
@@ -80,6 +84,29 @@ export default function AttendanceReports({ userType, userEmail }: Props) {
         marked_at: r.marked_at,
         method: r.method
       })) || []
+
+      // Apply additional filters (client-side)
+      if (studentFilter) {
+        formatted = formatted.filter(r => 
+          r.student_name.toLowerCase().includes(studentFilter.toLowerCase()) ||
+          r.student_usn.toLowerCase().includes(studentFilter.toLowerCase())
+        )
+      }
+
+      if (classFilter) {
+        formatted = formatted.filter(r => 
+          r.class_name.toLowerCase().includes(classFilter.toLowerCase())
+        )
+      }
+
+      if (subjectFilter) {
+        formatted = formatted.filter(r => 
+          r.subject_name.toLowerCase().includes(subjectFilter.toLowerCase())
+        )
+      }
+
+      // Note: Course filter would need additional data from database
+      // For now, it's not included in the query structure
 
       setReports(formatted)
     } catch (err) {
@@ -159,18 +186,20 @@ export default function AttendanceReports({ userType, userEmail }: Props) {
 
       {/* Filters */}
       <div className="surface-panel surface-panel--muted">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h3 className="theme-heading text-lg font-semibold mb-4">📋 Filter Reports</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="label">Filter by Date</label>
+            <label className="label">Date</label>
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
               className="input-field"
+              placeholder="Select date"
             />
           </div>
           <div>
-            <label className="label">Filter by Status</label>
+            <label className="label">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -180,6 +209,51 @@ export default function AttendanceReports({ userType, userEmail }: Props) {
               <option value="present">Present Only</option>
               <option value="absent">Absent Only</option>
             </select>
+          </div>
+          <div>
+            <label className="label">Student (Name or USN)</label>
+            <input
+              type="text"
+              value={studentFilter}
+              onChange={(e) => setStudentFilter(e.target.value)}
+              className="input-field"
+              placeholder="Search by name or USN..."
+            />
+          </div>
+          <div>
+            <label className="label">Class</label>
+            <input
+              type="text"
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="input-field"
+              placeholder="Filter by class..."
+            />
+          </div>
+          <div>
+            <label className="label">Subject</label>
+            <input
+              type="text"
+              value={subjectFilter}
+              onChange={(e) => setSubjectFilter(e.target.value)}
+              className="input-field"
+              placeholder="Filter by subject..."
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setDateFilter('')
+                setStatusFilter('all')
+                setStudentFilter('')
+                setClassFilter('')
+                setSubjectFilter('')
+                setCourseFilter('')
+              }}
+              className="btn-secondary w-full"
+            >
+              🔄 Clear Filters
+            </button>
           </div>
         </div>
       </div>

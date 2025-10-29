@@ -25,6 +25,7 @@ export default function StudentRegistration() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showFaceCapture, setShowFaceCapture] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -73,31 +74,75 @@ export default function StudentRegistration() {
     setError('')
     setSuccess('')
 
-    if (!faceDescriptor) {
+    // For new students, face is required. For editing, it's optional
+    if (!editingStudent && !faceDescriptor) {
       setError('Please capture face before submitting')
       return
     }
 
     try {
-      const studentData = {
-        ...formData,
-        face_descriptor: descriptorToArray(faceDescriptor),
-        face_image_url: faceImage,
+      if (editingStudent) {
+        // UPDATE existing student
+        const updateData: any = {
+          name: formData.name,
+          email: formData.email,
+          usn: formData.usn,
+          phone: formData.phone,
+          class_id: formData.class_id || null,
+        }
+
+        // Only update face if new one was captured
+        if (faceDescriptor) {
+          updateData.face_descriptor = descriptorToArray(faceDescriptor!)
+          updateData.face_image_url = faceImage
+        }
+
+        const { error } = await supabase
+          .from('students')
+          .update(updateData)
+          .eq('id', editingStudent.id)
+
+        if (error) throw error
+
+        setSuccess('✅ Student updated successfully!')
+      } else {
+        // CREATE new student
+        const studentData = {
+          ...formData,
+          face_descriptor: descriptorToArray(faceDescriptor!),
+          face_image_url: faceImage,
+        }
+
+        const { error } = await supabase
+          .from('students')
+          .insert([studentData])
+
+        if (error) throw error
+
+        setSuccess(`✅ Student registered successfully!\n\nLogin Details:\nEmail: ${formData.email}\nOTP will be generated on login screen.`)
       }
 
-      const { error } = await supabase
-        .from('students')
-        .insert([studentData])
-
-      if (error) throw error
-
-      setSuccess(`✅ Student registered successfully!\n\nLogin Details:\nEmail: ${formData.email}\nOTP will be generated on login screen.`)
       setShowForm(false)
       resetForm()
       fetchData()
     } catch (err: any) {
-      setError(err.message || 'Failed to register student')
+      setError(err.message || 'Failed to save student')
     }
+  }
+
+  const handleEdit = (student: Student) => {
+    setEditingStudent(student)
+    setFormData({
+      name: student.name,
+      email: student.email,
+      usn: student.usn,
+      phone: student.phone || '',
+      class_id: student.class_id || '',
+    })
+    // Don't set face - it's optional when editing
+    setFaceDescriptor(null)
+    setFaceImage(null)
+    setShowForm(true)
   }
 
   const handleShowLoginInfo = (student: Student) => {
@@ -157,7 +202,9 @@ export default function StudentRegistration() {
     setFormData({ name: '', email: '', usn: '', phone: '', class_id: '' })
     setFaceDescriptor(null)
     setFaceImage(null)
+    setEditingStudent(null)
     setError('')
+    setSuccess('')
   }
 
   if (loading) {
@@ -198,7 +245,7 @@ export default function StudentRegistration() {
       {showForm && !showFaceCapture && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="card max-w-2xl w-full my-8">
-            <h3 className="text-xl font-bold mb-4">Register New Student</h3>
+            <h3 className="text-xl font-bold mb-4">{editingStudent ? 'Edit Student' : 'Register New Student'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -266,10 +313,10 @@ export default function StudentRegistration() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-blue-900 dark:text-blue-100">
-                      Face Recognition
+                      Face Recognition {editingStudent && '(Optional)'}
                     </p>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                      {faceDescriptor ? '✓ Face captured' : 'Not captured yet'}
+                      {faceDescriptor ? '✓ Face captured' : editingStudent ? 'Keep existing face data or capture new' : 'Not captured yet'}
                     </p>
                   </div>
                   <button
@@ -277,14 +324,14 @@ export default function StudentRegistration() {
                     onClick={() => setShowFaceCapture(true)}
                     className="btn-primary"
                   >
-                    {faceDescriptor ? 'Recapture' : 'Capture Face'}
+                    {faceDescriptor ? 'Recapture' : editingStudent ? 'Update Face' : 'Capture Face'}
                   </button>
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="btn-primary flex-1">
-                  Register Student
+                  {editingStudent ? 'Update Student' : 'Register Student'}
                 </button>
                 <button
                   type="button"
@@ -346,6 +393,13 @@ export default function StudentRegistration() {
                         title="Show login instructions"
                       >
                         🔑 Login Info
+                      </button>
+                      <button
+                        onClick={() => handleEdit(student)}
+                        className="text-blue-500 hover:text-blue-600 font-medium"
+                        title="Edit student details"
+                      >
+                        Edit
                       </button>
                       <button
                         onClick={() => handleDelete(student.id)}
