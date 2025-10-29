@@ -9,6 +9,7 @@ import ClassManager from '../components/admin/ClassManager'
 import SemesterManager from '../components/admin/SemesterManager'
 import AttendanceReports from '../components/shared/AttendanceReports'
 import ProfileEdit from '../components/shared/ProfileEdit'
+import ScheduleManager from '../components/admin/ScheduleManager'
 
 export default function AdminPortal() {
   const navigate = useNavigate()
@@ -32,6 +33,7 @@ export default function AdminPortal() {
     { id: 'semesters', name: 'Semesters', icon: '📅' },
     { id: 'subjects', name: 'Subjects', icon: '📖' },
     { id: 'classes', name: 'Classes', icon: '🎓' },
+    { id: 'schedules', name: 'Schedules', icon: '📅' },
     { id: 'students', name: 'Students', icon: '👨‍🎓' },
     { id: 'teachers', name: 'Teachers', icon: '👨‍🏫' },
     { id: 'reports', name: 'Reports', icon: '📈' },
@@ -151,6 +153,7 @@ export default function AdminPortal() {
         {activeTab === 'semesters' && <SemesterManager />}
         {activeTab === 'subjects' && <SubjectManager />}
         {activeTab === 'classes' && <ClassManager />}
+        {activeTab === 'schedules' && <ScheduleManager />}
         {activeTab === 'students' && <StudentRegistration />}
         {activeTab === 'teachers' && <TeacherManager />}
         {activeTab === 'reports' && <AttendanceReports userType="admin" />}
