@@ -105,33 +105,51 @@ export default function StudentRegistration() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this student?')) return
-
     try {
-      // Check if student has attendance records
-      const { data: attendanceRecords, error: attendanceError } = await supabase
+      // Count how many attendance records will be deleted
+      const { count: recordCount, error: countError } = await supabase
         .from('attendance_records')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .eq('student_id', id)
 
-      if (attendanceError) throw attendanceError
+      if (countError) throw countError
 
-      if (attendanceRecords && attendanceRecords.length > 0) {
-        setError('Cannot delete student: Student has attendance records. Please delete attendance records first or keep this student.')
-        return
+      // Build confirmation message
+      let confirmMessage = '⚠️ DELETE STUDENT\n\n'
+      confirmMessage += 'This will permanently delete:\n'
+      confirmMessage += `• Student profile and face data\n`
+      
+      if (recordCount && recordCount > 0) {
+        confirmMessage += `• ${recordCount} attendance record(s)\n`
+      }
+      
+      confirmMessage += '\n❌ THIS CANNOT BE UNDONE!\n\n'
+      confirmMessage += 'Are you absolutely sure?'
+
+      if (!confirm(confirmMessage)) return
+
+      // CASCADE DELETE: Delete attendance records first, then student
+      if (recordCount && recordCount > 0) {
+        const { error: recordsError } = await supabase
+          .from('attendance_records')
+          .delete()
+          .eq('student_id', id)
+
+        if (recordsError) throw recordsError
       }
 
-      // Safe to delete
+      // Delete student
       const { error } = await supabase
         .from('students')
         .delete()
         .eq('id', id)
 
       if (error) throw error
-      setSuccess('Student deleted successfully')
+      
+      setSuccess(`✅ Student deleted successfully! ${recordCount ? `(${recordCount} attendance records removed)` : ''}`)
       fetchData()
     } catch (err: any) {
-      setError(err.message)
+      setError('Error deleting student: ' + err.message)
     }
   }
 

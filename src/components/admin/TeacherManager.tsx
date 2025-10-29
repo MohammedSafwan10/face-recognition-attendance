@@ -98,23 +98,72 @@ export default function TeacherManager() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this teacher?')) return
-
     try {
-      // Check if teacher has attendance sessions
+      // Count sessions and attendance records that will be deleted
       const { data: sessions, error: sessionError } = await supabase
         .from('attendance_sessions')
-        .select('id', { count: 'exact', head: true })
+        .select('id')
         .eq('teacher_id', id)
 
       if (sessionError) throw sessionError
 
-      if (sessions && sessions.length > 0) {
-        alert('❌ Cannot delete teacher: Teacher has created attendance sessions.\n\nPlease delete their attendance sessions first or keep this teacher.')
-        return
+      const sessionCount = sessions?.length || 0
+      let totalAttendanceRecords = 0
+
+      // Count attendance records in all sessions
+      if (sessionCount > 0) {
+        const sessionIds = sessions!.map(s => s.id)
+        const { count: recordCount, error: recordError } = await supabase
+          .from('attendance_records')
+          .select('*', { count: 'exact', head: true })
+          .in('session_id', sessionIds)
+
+        if (recordError) throw recordError
+        totalAttendanceRecords = recordCount || 0
       }
 
-      // Safe to delete
+      // Build confirmation message
+      let confirmMessage = '⚠️ DELETE TEACHER\n\n'
+      confirmMessage += 'This will permanently delete:\n'
+      confirmMessage += `• Teacher profile\n`
+      
+      if (sessionCount > 0) {
+        confirmMessage += `• ${sessionCount} attendance session(s)\n`
+      }
+      
+      if (totalAttendanceRecords > 0) {
+        confirmMessage += `• ${totalAttendanceRecords} attendance record(s) from these sessions\n`
+      }
+      
+      confirmMessage += '\n❌ THIS CANNOT BE UNDONE!\n\n'
+      confirmMessage += 'Are you absolutely sure?'
+
+      if (!confirm(confirmMessage)) return
+
+      // CASCADE DELETE: Delete in order
+      // 1. Delete attendance records
+      if (sessionCount > 0) {
+        const sessionIds = sessions!.map(s => s.id)
+        
+        if (totalAttendanceRecords > 0) {
+          const { error: recordsError } = await supabase
+            .from('attendance_records')
+            .delete()
+            .in('session_id', sessionIds)
+
+          if (recordsError) throw recordsError
+        }
+
+        // 2. Delete sessions
+        const { error: sessionsError } = await supabase
+          .from('attendance_sessions')
+          .delete()
+          .eq('teacher_id', id)
+
+        if (sessionsError) throw sessionsError
+      }
+
+      // 3. Delete teacher
       const { error } = await supabase
         .from('teachers')
         .delete()
@@ -122,7 +171,11 @@ export default function TeacherManager() {
 
       if (error) throw error
       
-      alert('✅ Teacher deleted successfully!')
+      let successMsg = '✅ Teacher deleted successfully!'
+      if (sessionCount > 0) {
+        successMsg += `\n(${sessionCount} sessions and ${totalAttendanceRecords} attendance records removed)`
+      }
+      alert(successMsg)
       fetchTeachers()
     } catch (err: any) {
       alert('Error deleting teacher: ' + err.message)
