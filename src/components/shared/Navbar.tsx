@@ -30,7 +30,7 @@ export default function Navbar({ userType, userName, onLogout }: NavbarProps) {
               </svg>
             </div>
             <div className="navbar__brand-text">
-              <span className="navbar__title">FaceAttend</span>
+              <span className="navbar__title">AttendanceSystem</span>
               <span className="navbar__subtitle">Smart Attendance System</span>
             </div>
           </Link>

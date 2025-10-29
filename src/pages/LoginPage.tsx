@@ -145,7 +145,7 @@ export default function LoginPage() {
               </svg>
             </div>
           </div>
-          <h2 className="auth-title">FaceAttend</h2>
+          <h2 className="auth-title">AttendanceSystem</h2>
           <p className="auth-subtitle">Smart Face Recognition Attendance System</p>
         </div>
 
@@ -297,7 +297,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-          © 2025 FaceAttend. All rights reserved.
+          © 2025 AttendanceSystem. All rights reserved.
         </p>
       </div>
     </div>
