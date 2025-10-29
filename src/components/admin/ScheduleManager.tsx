@@ -25,7 +25,7 @@ interface Subject {
 }
 
 interface Teacher {
-  id: number
+  id: string
   name: string
 }
 
@@ -114,7 +114,7 @@ export default function ScheduleManager() {
         .insert([{
           class_id: formData.class_id,
           subject_id: formData.subject_id,
-          teacher_id: parseInt(formData.teacher_id),
+          teacher_id: formData.teacher_id,
           day: formData.day,
           start_time: formData.start_time,
           end_time: formData.end_time
